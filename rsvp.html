@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <!-- Title -->
+    <h1 class="display-4 title text-center">RSVP</h1>
+
+    <!-- RSVP Information -->
+    <div class="container mt-4">
+        <form style="max-width: 700px; margin: auto; text-align: left;" method="POST" action="/thankyou">
+            <input type="hidden" name="invitation_id" id="invitation_id">
+            <div class="form-group row align-items-center">
+                <label for="name" class="col-sm-2 col-form-label">Name</label>
+                <div class="col-sm-8">
+                    <input type="text" class="form-control" id="name" name="name" aria-describedby="nameHelp" placeholder="Enter name">
+                    <small id="nameHelp" class="form-text text-muted">Please enter your <b>first</b> name to search the guest list.</small>
+                </div>
+                <div class="col-sm-2">
+                    <button type="button" class="btn btn-secondary" id="searchBtn">Search</button>
+                </div>
+            </div>
+
+            <div id="confirm">
+                <label id="guest_list_label"></label>
+                <ul id="guest_list">
+                </ul>
+            </div>
+            <div id="hidden">
+
+                <!-- Phone Number Field (Initially Hidden) -->
+                <div id="phone_div" class="form-group row align-items-center" style="display: none;">
+                    <label for="phone" class="col-sm-2 col-form-label">Phone</label>
+                    <div class="col-sm-10">
+                        <input type="tel" class="form-control" id="phone" name="phone" placeholder="Enter phone number">
+                    </div>
+                </div>
+
+                <div id="accommodation_div" class="form-group row align-items-center">
+                    <label id="accommodation_label" class="col-sm-2 col-form-label">Accommodation</label>
+                    <div id="accommodation_options" class="col-sm-10">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="accommodation" id="accommodationYes" value="yes">
+                            <label class="form-check-label" for="accommodationYes">Yes</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="accommodation" id="accommodationNo" value="no">
+                            <label class="form-check-label" for="accommodationNo">No</label>
+                        </div>
+                    </div>
+                    <small id="accommodation_help" class="form-text text-muted">Your invitation includes 2x accommodation at Hawley House. Please indicate above if this is required.</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary">RSVP</button>
+            </div>
+            <input type="hidden" name="guest_list_data" id="guest_list_data">
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#hidden").hide(); // Initially hide the hidden element
+            $("#accommodation_div").hide(); // Initially hide accommodation div
+
+            $('#searchBtn').click(function() {
+                var name = $("#name").val(); // Get the name from input
+                $.ajax({
+                    url: '/get_guest/' + encodeURIComponent(name), // URL to send the request
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        if (Array.isArray(data) && data.length > 0) {
+                            $("#hidden").show(); // Show the hidden element
+                            $("#phone_div").show(); // Show the phone number input field
+                            $("#guest_list").empty(); // Clear previous guest list
+
+                            $.each(data, function(index, item) {
+                                // Set invitation ID in the hidden field
+                                $('#invitation_id').val(item.invitation);
+
+                                // AJAX call to get guests for invitation
+                                $.ajax({
+                                    url: "/get_guests_for_invitation/" + item.invitation, // URL for guest list
+                                    type: 'GET',
+                                    dataType: 'json',
+                                    success: function(guest_list_data) {
+                                        if (Array.isArray(guest_list_data)) {
+                                            $.each(guest_list_data, function(index_2, item_2) {
+                                                $("#guest_list").append(`
+                                                    <li style="display: flex; align-items: center;">
+                                                        <input type="text"
+                                                               name="guest_name[]"
+                                                               placeholder="Please provide guest's name. If you are not bringing a guest, please leave blank."
+                                                               value="${item_2.name.toLowerCase().includes('guest') ? '' : item_2.name}"
+                                                               ${item_2.name.toLowerCase().includes('guest') ? '' : 'disabled'}/>
+                                                        <input type="checkbox" name="guest_check[]" style="margin-left: 10px;" />
+                                                    </li>`);
+                                            });
+                                        }
+                                    },
+                                    error: function(jqXHR, textStatus, errorThrown) {
+                                        console.error('AJAX request for guest list failed:', textStatus, errorThrown);
+                                    }
+                                });
+
+                                // AJAX call to check accommodation offered
+                                $.ajax({
+                                    url: "/get_invitation/" + item.invitation, // URL to check accommodation
+                                    type: 'GET',
+                                    dataType: 'json',
+                                    success: function(invitation_data) {
+                                        // Check if accommodation is offered and show div if true
+                                        if (invitation_data[0].accommodation_offered === 1) {
+                                            $("#accommodation_div").show();
+                                        } else {
+                                            $("#accommodation_div").hide();
+                                        }
+                                    },
+                                    error: function(jqXHR, textStatus, errorThrown) {
+                                        console.error('AJAX request for invitation failed:', textStatus, errorThrown);
+                                    }
+                                });
+                            });
+                        } else if (data && typeof data === 'object') {
+                            console.log(data); // Log single object
+                        } else {
+                            console.warn('No valid data received'); // No valid data
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('AJAX request failed:', textStatus, errorThrown);
+                    }
+                });
+            });
+
+            $('form').on('submit', function(event) {
+                // Collect guest names and checkboxes
+                const guests = $('#guest_list li').map(function() {
+                    return {
+                        name: $(this).find('input[type="text"]').val(),
+                        confirmed: $(this).find('input[type="checkbox"]').is(':checked')
+                    };
+                }).get();
+
+                // Set the JSON string as the value of the hidden input for guest list data
+                $('#guest_list_data').val(JSON.stringify(guests));
+            });
+        });
+
+    </script>
+{% endblock %}

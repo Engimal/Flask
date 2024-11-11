@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <!-- Title -->
+    <h1 class="display-4 title">Grace & Austin's Wedding</h1>
+    <h3 class="title">Saturday 22 Feb 2025</h3>
+
+    <!-- Image Buttons with Aligned Text -->
+    <div class="links mt-4">
+        <div class="link-item">
+            <a href="/rsvp">
+                <img class="float-wiggle-1" src="{{ url_for('static', filename='images/shell1.png') }}" alt="RSVP">
+                <span>RSVP</span>
+            </a>
+        </div>
+        <div class="link-item">
+            <a href="/info">
+                <img class="float-wiggle-2" src="{{ url_for('static', filename='images/shell2.png') }}" alt="More Information">
+                <span>More Info</span>
+            </a>
+        </div>
+    </div>
+{% endblock %}
