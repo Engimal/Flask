@@ -46,7 +46,7 @@
                             <label class="form-check-label" for="accommodationNo">No</label>
                         </div>
                     </div>
-                    <small id="accommodation_help" class="form-text text-muted">Your invitation includes 2x accommodation at Hawley House. Please indicate above if this is required.</small>
+                    <small id="accommodation_help" class="form-text text-muted">Your invitation includes 2x nights accommodation at Hawley House. Please confirm above if you would like to stay.</small>
                 </div>
 
                 <button type="submit" class="btn btn-primary">RSVP</button>
@@ -68,6 +68,8 @@
                     dataType: 'json',
                     success: function(data) {
                         if (Array.isArray(data) && data.length > 0) {
+                            $('#confirm').prepend('<br/><br/>Please check the box against each invitee that can come');
+
                             $("#hidden").show(); // Show the hidden element
                             $("#phone_div").show(); // Show the phone number input field
                             $("#guest_list").empty(); // Clear previous guest list
@@ -142,6 +144,17 @@
 
                 // Set the JSON string as the value of the hidden input for guest list data
                 $('#guest_list_data').val(JSON.stringify(guests));
+            });
+        });
+
+        // jQuery to modify the value before form submission
+        $("form").submit(function() {
+            // Loop through each enabled input field
+            $("input[type='text']:not([disabled])").each(function() {
+                // Append " (Guest)" to the value if the input is not disabled
+                if ($(this).val()) {
+                    $(this).val($(this).val() + " (Guest)");
+                }
             });
         });
 

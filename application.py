@@ -45,11 +45,19 @@ def get_guests_for_invitation(name):
     return guest_df.to_json(orient='records')
 
 
-def update_guest(name, attendance):
+def update_guest(name, attendance, invite):
     connection = db_handler.create_connection()
     cursor = connection.cursor()
-    sql = "UPDATE guest SET attendance=? WHERE name=?"
-    cursor.execute(sql, (attendance, name))
+
+
+
+    if 'Guest' in name:
+        print('Updating the guest!!!')
+        sql = "UPDATE guest SET attendance=?, name = ? WHERE name like '%Guest%' and invitation=?"
+        cursor.execute(sql, (attendance, name, invite))
+    else:
+        sql = "UPDATE guest SET attendance=? WHERE name=?"
+        cursor.execute(sql, (attendance, name))
     connection.commit()
     connection.close()
 
@@ -92,10 +100,10 @@ def thankyou():
                 attendance = 1
             else:
                 attendance = 0
-            update_guest(guest['name'], attendance)
+            update_guest(guest['name'], attendance, invite_id)
 
     return render_template('thankyou.html')
 
 
 if __name__ == '__main__':
-    application.run(host='0.0.0.0', port=80, debug=True)
+    application.run(debug=True)
